@@ -19,7 +19,7 @@ client.on(ClientEvent.MESSAGE, async (message: Message) => {
     const args = message.content.slice(prefix.length).split(/ +/) || [''];
     let command = args.shift();
     if (!command) {
-        // await message.react(FAILURE_REACTION);
+        await message.react(FAILURE_REACTION);
         message.reply(helpMessages.invalidCommand);
         return;
     }
@@ -27,14 +27,19 @@ client.on(ClientEvent.MESSAGE, async (message: Message) => {
 
     const botCommand = commandAliases[command] || command;
     let functionsToRun = commandMapping[botCommand];
+    if (!functionsToRun) {
+        await message.react(FAILURE_REACTION);
+        return;
+    }
+
     functionsToRun = Array.isArray(functionsToRun) ? functionsToRun : [functionsToRun];
     if (!functionsToRun.every(functionToRun => typeof functionToRun === 'function')) {
-        // await message.react(FAILURE_REACTION);
+        await message.react(FAILURE_REACTION);
         message.reply(format(helpMessages.invalidFunction, botCommand));
         return;
     };
 
-    // await message.react(SUCCESS_REACTION);
+    await message.react(SUCCESS_REACTION);
 
     functionsToRun.forEach(command => command(message, args));
 });

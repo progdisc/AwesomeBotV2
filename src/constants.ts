@@ -2,8 +2,8 @@ import { BotCommand } from "./types";
 
 export const DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
 
-export const SUCCESS_REACTION = ':white_check_mark';
-export const FAILURE_REACTION = ':x:';
+export const SUCCESS_REACTION = '✅';
+export const FAILURE_REACTION = '❌';
 
 export const errorMessages: Record<string, string> = {
     duckDuckGoError: 'Sorry, there was a problem with the DuckDuckGo query.',

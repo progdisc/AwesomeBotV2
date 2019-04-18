@@ -49,28 +49,43 @@ client.once(types_1.ClientEvent.READY, function () {
 client.on(types_1.ClientEvent.MESSAGE, function (message) { return __awaiter(_this, void 0, void 0, function () {
     var args, command, botCommand, functionsToRun;
     return __generator(this, function (_a) {
-        if (message.content[0] !== config_json_1.prefix || message.author.bot)
-            return [2 /*return*/];
-        args = message.content.slice(config_json_1.prefix.length).split(/ +/) || [''];
-        command = args.shift();
-        if (!command) {
-            // await message.react(FAILURE_REACTION);
-            message.reply(constants_1.helpMessages.invalidCommand);
-            return [2 /*return*/];
+        switch (_a.label) {
+            case 0:
+                if (message.content[0] !== config_json_1.prefix || message.author.bot)
+                    return [2 /*return*/];
+                args = message.content.slice(config_json_1.prefix.length).split(/ +/) || [''];
+                command = args.shift();
+                if (!!command) return [3 /*break*/, 2];
+                return [4 /*yield*/, message.react(constants_1.FAILURE_REACTION)];
+            case 1:
+                _a.sent();
+                message.reply(constants_1.helpMessages.invalidCommand);
+                return [2 /*return*/];
+            case 2:
+                command = command.toLowerCase();
+                botCommand = mappings_1.commandAliases[command] || command;
+                functionsToRun = mappings_1.commandMapping[botCommand];
+                if (!!functionsToRun) return [3 /*break*/, 4];
+                return [4 /*yield*/, message.react(constants_1.FAILURE_REACTION)];
+            case 3:
+                _a.sent();
+                return [2 /*return*/];
+            case 4:
+                functionsToRun = Array.isArray(functionsToRun) ? functionsToRun : [functionsToRun];
+                if (!!functionsToRun.every(function (functionToRun) { return typeof functionToRun === 'function'; })) return [3 /*break*/, 6];
+                return [4 /*yield*/, message.react(constants_1.FAILURE_REACTION)];
+            case 5:
+                _a.sent();
+                message.reply(util_1.format(constants_1.helpMessages.invalidFunction, botCommand));
+                return [2 /*return*/];
+            case 6:
+                ;
+                return [4 /*yield*/, message.react(constants_1.SUCCESS_REACTION)];
+            case 7:
+                _a.sent();
+                functionsToRun.forEach(function (command) { return command(message, args); });
+                return [2 /*return*/];
         }
-        command = command.toLowerCase();
-        botCommand = mappings_1.commandAliases[command] || command;
-        functionsToRun = mappings_1.commandMapping[botCommand];
-        functionsToRun = Array.isArray(functionsToRun) ? functionsToRun : [functionsToRun];
-        if (!functionsToRun.every(function (functionToRun) { return typeof functionToRun === 'function'; })) {
-            // await message.react(FAILURE_REACTION);
-            message.reply(util_1.format(constants_1.helpMessages.invalidFunction, botCommand));
-            return [2 /*return*/];
-        }
-        ;
-        // await message.react(SUCCESS_REACTION);
-        functionsToRun.forEach(function (command) { return command(message, args); });
-        return [2 /*return*/];
     });
 }); });
 client.login(config_json_1.token);

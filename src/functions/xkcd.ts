@@ -7,25 +7,24 @@ import { helpMessages, errorMessages } from '../constants';
 import { BotCommand } from '../types';
 
 const parseXkcdDataFromXkcdUrl = async (xkcdUrl: string) => {
-    return axios.get(xkcdUrl).then((xkcdBody: any) => {
-        const xkcdData = JSON.parse(xkcdBody);
-        if (!xkcdData) {
+    return axios.get(xkcdUrl).then(({ data }: any) => {
+        if (!data) {
             console.error(errorMessages.unprocessableXkcd);
             return;
         }
 
         return [
             '```diff',
-            `Title: ${xkcdData.safe_title}`,
-            `Alt Text: ${xkcdData.alt}`,
+            `Title: ${data.safe_title}`,
+            `Alt Text: ${data.alt}`,
             '```',
-            `${xkcdData.img}`
+            `${data.img}`
         ].join('\n');
     });
 }
 
-const parseXkcdUrlFromDuckDuckGo = (body: any) => {
-    const parsedBody = cheerio.load(body);
+const parseXkcdUrlFromDuckDuckGo = ({ data }: any) => {
+    const parsedBody = cheerio.load(data);
     let xkcdUrl: string = '';
 
     if (!parsedBody) {
@@ -34,10 +33,10 @@ const parseXkcdUrlFromDuckDuckGo = (body: any) => {
     }
 
     parsedBody('.result__a').each((_, link) => {
-        const href = link.attribs.href;
-        console.log(_, href);
-        if (xkcdUrl || href.search(/^https?:\/\/(www\.)?xkcd\.com\/\d+/) === -1) return;
-        xkcdUrl = `${href}info.0.json`;
+        const href = decodeURIComponent(link.attribs.href);
+        const matches = (href || '').match(/(https?\:\/\/(www\.)?xkcd\.com\/\d+\/)/g);
+        if (xkcdUrl || !matches) return;
+        xkcdUrl = `${matches[0]}info.0.json`;
     });
 
     if (!xkcdUrl) {
@@ -55,10 +54,7 @@ export const getXkcdComic = async (message: Message, args: string[]) => {
     }
 
     const duckDuckGoHeaders = {
-        'accept-language': 'en-US,en;q=0.8',
-        'upgrade-insecure-requests': 1,
-        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
-            'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36',
+        'User-Agent': 'Emacs Restclient'
     };
 
     const duckDuckGoUrl = 'https://duckduckgo.com/html/?q=%s%20xkcd';
@@ -69,7 +65,9 @@ export const getXkcdComic = async (message: Message, args: string[]) => {
         headers: duckDuckGoHeaders
     };
 
-    return axios(axiosParams)
+    const xkcdComic = await axios(axiosParams)
         .then(parseXkcdUrlFromDuckDuckGo)
         .then(parseXkcdDataFromXkcdUrl);
+
+    message.channel.send(xkcdComic);
 };

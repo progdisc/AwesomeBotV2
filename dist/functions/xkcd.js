@@ -46,35 +46,36 @@ var constants_1 = require("../constants");
 var types_1 = require("../types");
 var parseXkcdDataFromXkcdUrl = function (xkcdUrl) { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        return [2 /*return*/, axios_1.default.get(xkcdUrl).then(function (xkcdBody) {
-                var xkcdData = JSON.parse(xkcdBody);
-                if (!xkcdData) {
+        return [2 /*return*/, axios_1.default.get(xkcdUrl).then(function (_a) {
+                var data = _a.data;
+                if (!data) {
                     console.error(constants_1.errorMessages.unprocessableXkcd);
                     return;
                 }
                 return [
                     '```diff',
-                    "Title: " + xkcdData.safe_title,
-                    "Alt Text: " + xkcdData.alt,
+                    "Title: " + data.safe_title,
+                    "Alt Text: " + data.alt,
                     '```',
-                    "" + xkcdData.img
+                    "" + data.img
                 ].join('\n');
             })];
     });
 }); };
-var parseXkcdUrlFromDuckDuckGo = function (body) {
-    var parsedBody = cheerio_1.default.load(body);
+var parseXkcdUrlFromDuckDuckGo = function (_a) {
+    var data = _a.data;
+    var parsedBody = cheerio_1.default.load(data);
     var xkcdUrl = '';
     if (!parsedBody) {
         console.error(constants_1.errorMessages.duckDuckGoError);
         return xkcdUrl;
     }
     parsedBody('.result__a').each(function (_, link) {
-        var href = link.attribs.href;
-        console.log(_, href);
-        if (xkcdUrl || href.search(/^https?:\/\/(www\.)?xkcd\.com\/\d+/) === -1)
+        var href = decodeURIComponent(link.attribs.href);
+        var matches = (href || '').match(/(https?\:\/\/(www\.)?xkcd\.com\/\d+\/)/g);
+        if (xkcdUrl || !matches)
             return;
-        xkcdUrl = href + "info.0.json";
+        xkcdUrl = matches[0] + "info.0.json";
     });
     if (!xkcdUrl) {
         console.error(constants_1.errorMessages.noXkcdUrlFound);
@@ -83,26 +84,30 @@ var parseXkcdUrlFromDuckDuckGo = function (body) {
     return xkcdUrl;
 };
 exports.getXkcdComic = function (message, args) { return __awaiter(_this, void 0, void 0, function () {
-    var duckDuckGoHeaders, duckDuckGoUrl, axiosParams;
+    var duckDuckGoHeaders, duckDuckGoUrl, axiosParams, xkcdComic;
     return __generator(this, function (_a) {
-        if (!args.length) {
-            message.reply(constants_1.helpMessages[types_1.BotCommand.XKCD]);
-            return [2 /*return*/];
+        switch (_a.label) {
+            case 0:
+                if (!args.length) {
+                    message.reply(constants_1.helpMessages[types_1.BotCommand.XKCD]);
+                    return [2 /*return*/];
+                }
+                duckDuckGoHeaders = {
+                    'User-Agent': 'Emacs Restclient'
+                };
+                duckDuckGoUrl = 'https://duckduckgo.com/html/?q=%s%20xkcd';
+                axiosParams = {
+                    method: 'get',
+                    url: util_1.format(duckDuckGoUrl, encodeURIComponent(args.join(' '))),
+                    headers: duckDuckGoHeaders
+                };
+                return [4 /*yield*/, axios_1.default(axiosParams)
+                        .then(parseXkcdUrlFromDuckDuckGo)
+                        .then(parseXkcdDataFromXkcdUrl)];
+            case 1:
+                xkcdComic = _a.sent();
+                message.channel.send(xkcdComic);
+                return [2 /*return*/];
         }
-        duckDuckGoHeaders = {
-            'accept-language': 'en-US,en;q=0.8',
-            'upgrade-insecure-requests': 1,
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ' +
-                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36',
-        };
-        duckDuckGoUrl = 'https://duckduckgo.com/html/?q=%s%20xkcd';
-        axiosParams = {
-            method: 'get',
-            url: util_1.format(duckDuckGoUrl, encodeURIComponent(args.join(' '))),
-            headers: duckDuckGoHeaders
-        };
-        return [2 /*return*/, axios_1.default(axiosParams)
-                .then(parseXkcdUrlFromDuckDuckGo)
-                .then(parseXkcdDataFromXkcdUrl)];
     });
 }); };
